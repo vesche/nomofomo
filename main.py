@@ -40,7 +40,7 @@ class Event:
     url: str
 
 
-def randomize_user_agent():
+def randomize_user_agent() -> str:
     user_agents = open("user_agents.txt").read().splitlines()
     return random.choice(user_agents)
 
@@ -119,7 +119,7 @@ def send_sms(body: str) -> str:
     return sid
 
 
-def run():
+def run() -> None:
     events = get_events()
     new_events = parse_events(events)
     execute_events(new_events)
