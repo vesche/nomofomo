@@ -1,0 +1,5 @@
+supabase
+twilio
+beautifulsoup4
+sicklib
+requests
