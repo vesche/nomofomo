@@ -1,5 +1,6 @@
 import datetime
 import json
+import random
 import sys
 import time
 from dataclasses import dataclass
@@ -39,9 +40,14 @@ class Event:
     url: str
 
 
+def randomize_user_agent():
+    user_agents = open("user_agents.txt").read().splitlines()
+    return random.choice(user_agents)
+
+
 def get_events() -> list[dict]:
     try:
-        r = requests.get(cm_url)
+        r = requests.get(cm_url, headers={"User-Agent": randomize_user_agent()})
     except Exception as e:
         logger.error(f"Unable to make web request, {e}")
         sys.exit(1)
