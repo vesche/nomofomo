@@ -10,7 +10,7 @@ import requests
 import supabase
 
 from bs4 import BeautifulSoup
-from sicklib import check_api_key, get_cred, logger
+from sicklib import get_cred, logger
 from twilio.rest import Client
 
 
@@ -55,6 +55,7 @@ def get_events() -> list[dict]:
         events = data["props"]["pageProps"]["data"]["events"]
     except Exception as e:
         logger.error(f"Unable to parse web data, {e}")
+        sys.exit(1)
 
     return events
 
@@ -116,6 +117,7 @@ def run():
     events = get_events()
     new_events = parse_events(events)
     execute_events(new_events)
+    logger.info("nomofomo completed successfully")
 
 
 if __name__ == "__main__":
