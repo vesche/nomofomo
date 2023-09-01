@@ -101,10 +101,12 @@ def parse_events(events: list[dict]) -> list[Event]:
 
 
 def execute_events(new_events: list[Event]) -> None:
+    msg = 'NOMOFOMO ALERT!\n'
     for e in new_events:
-        _ = send_sms(f"NOMOFOMO ALERT! {e.name}, {e.when}, {e.room}")
+        msg += f"{e.name}, {e.when}, {e.room}\n"
         _ = sb.table("events").insert(e.__dict__).execute()
         logger.info(f"New event processed, {e.__dict__}")
+    _ = send_sms(msg.strip())
 
 
 def send_sms(body: str) -> str:
