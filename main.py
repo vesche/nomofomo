@@ -4,6 +4,7 @@ import random
 import sys
 import time
 from dataclasses import dataclass
+from dateutil.relativedelta import relativedelta
 
 import pytz
 
@@ -68,6 +69,9 @@ def get_events_cm() -> list[dict]:
 
 
 def get_events_hb() -> list[dict]:
+    dt_now = datetime.datetime.now()
+    dt_fut = dt_now + relativedelta(years=2)
+    hb_url += f"startDate={str(dt_now)[:10]}&endDate={str(dt_fut)[:10]}"
     try:
         r = requests.get(hb_url, headers={"User-Agent": randomize_user_agent()})
     except Exception as e:
@@ -113,14 +117,38 @@ def parse_events_cm(events: list[dict]) -> list[Event]:
 def parse_events_hb(events: list[dict]) -> list[Event]:
     new_events = list()
     event_table = sb.table("events_hb").select("*").execute()
+
+    names = list(set(i['name'] for i in events))
+    known_names = [i["name"] for i in event_table.data]
+
+    for name in names:
+        # skip if the named event is already known
+        if name in known_names:
+            continue
+        dates = [i['eventDate'] for i in r if i['name']==name]
+        new_events.append(
+            Event(
+                name=name,
+                dates=f"{dates[0][:10]} - {dates[-1][:10]}",
+            )
+
     return new_events
 
 
-def execute_events(new_events: list[Event]) -> None:
-    msg = "NOMOFOMO ALERT!\n"
+def execute_events_cm(new_events: list[Event]) -> None:
+    msg = "NOMOFOMO ALERT CM!\n"
     for e in new_events:
         msg += f"{e.name}, {e.when}, {e.room}\n"
-        _ = sb.table("events").insert(e.__dict__).execute()
+        _ = sb.table("events_cm").insert(e.__dict__).execute()
+        logger.info(f"New event processed, {e.__dict__}")
+    _ = send_sms(msg.strip())
+
+
+def execute_events_hb(new_events: list[Event]) -> None:
+    msg = "NOMOFOMO ALERT HB!\n"
+    for e in new_events:
+        msg += f"{e.name}, {e.dates}\n"
+        _ = sb.table("events_hb").insert(e.__dict__).execute()
         logger.info(f"New event processed, {e.__dict__}")
     _ = send_sms(msg.strip())
 
@@ -142,13 +170,13 @@ def run() -> None:
     events_cm = get_events_cm()
     new_events_cm = parse_events_cm(events_cm)
     if new_events_cm:
-        execute_events(new_events_cm)
+        execute_events_cm(new_events_cm)
 
     # hb
     events_hb = get_events_hb()
     new_events_hb = parse_events_hb(events_hb)
     if new_events_hb:
-        execute_events(new_events_hb)
+        execute_events_hb(new_events_hb)
 
     logger.info("nomofomo completed successfully")
 
