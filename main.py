@@ -15,10 +15,6 @@ from bs4 import BeautifulSoup
 from sicklib import get_cred, logger
 from twilio.rest import Client
 
-
-cm_url = get_cred("CM_URL")
-hb_url = get_cred("HB_URL")
-
 twilio_number = get_cred("TWILIO_NUMBER")
 my_number = get_cred("MY_NUMBER")
 
@@ -48,6 +44,7 @@ def randomize_user_agent() -> str:
 
 
 def get_events_cm() -> list[dict]:
+    cm_url = get_cred("CM_URL")
     try:
         r = requests.get(cm_url, headers={"User-Agent": randomize_user_agent()})
     except Exception as e:
@@ -71,7 +68,7 @@ def get_events_cm() -> list[dict]:
 def get_events_hb() -> list[dict]:
     dt_now = datetime.datetime.now()
     dt_fut = dt_now + relativedelta(years=2)
-    hb_url += f"startDate={str(dt_now)[:10]}&endDate={str(dt_fut)[:10]}"
+    hb_url = get_cred("HB_URL") + f"startDate={str(dt_now)[:10]}&endDate={str(dt_fut)[:10]}"
     try:
         r = requests.get(hb_url, headers={"User-Agent": randomize_user_agent()})
     except Exception as e:
