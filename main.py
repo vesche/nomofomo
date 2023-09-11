@@ -131,6 +131,7 @@ def parse_events_hb(events: list[dict]) -> list[Event]:
                 name=name,
                 dates=f"{dates[0][:10]} - {dates[-1][:10]}",
             )
+        )
 
     return new_events
 
