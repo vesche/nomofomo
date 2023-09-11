@@ -16,6 +16,7 @@ from twilio.rest import Client
 
 
 cm_url = get_cred("CM_URL")
+hb_url = get_cred("HB_URL")
 
 twilio_number = get_cred("TWILIO_NUMBER")
 my_number = get_cred("MY_NUMBER")
@@ -45,7 +46,7 @@ def randomize_user_agent() -> str:
     return random.choice(user_agents)
 
 
-def get_events() -> list[dict]:
+def get_events_cm() -> list[dict]:
     try:
         r = requests.get(cm_url, headers={"User-Agent": randomize_user_agent()})
     except Exception as e:
@@ -66,9 +67,18 @@ def get_events() -> list[dict]:
     return events
 
 
-def parse_events(events: list[dict]) -> list[Event]:
+def get_events_hb() -> list[dict]:
+    try:
+        r = requests.get(hb_url, headers={"User-Agent": randomize_user_agent()})
+    except Exception as e:
+        logger.error(f"Unable to make web request, {e}")
+        sys.exit(1)
+    return r.json()
+
+
+def parse_events_cm(events: list[dict]) -> list[Event]:
     new_events = list()
-    event_table = sb.table("events").select("*").execute()
+    event_table = sb.table("events_cm").select("*").execute()
 
     for event in events:
         _id = event["_id"]
@@ -100,6 +110,12 @@ def parse_events(events: list[dict]) -> list[Event]:
     return new_events
 
 
+def parse_events_hb(events: list[dict]) -> list[Event]:
+    new_events = list()
+    event_table = sb.table("events_hb").select("*").execute()
+    return new_events
+
+
 def execute_events(new_events: list[Event]) -> None:
     msg = "NOMOFOMO ALERT!\n"
     for e in new_events:
@@ -122,10 +138,18 @@ def send_sms(body: str) -> str:
 
 
 def run() -> None:
-    events = get_events()
-    new_events = parse_events(events)
-    if new_events:
-        execute_events(new_events)
+    # cm
+    events_cm = get_events_cm()
+    new_events_cm = parse_events_cm(events_cm)
+    if new_events_cm:
+        execute_events(new_events_cm)
+
+    # hb
+    events_hb = get_events_hb()
+    new_events_hb = parse_events_hb(events_hb)
+    if new_events_hb:
+        execute_events(new_events_hb)
+
     logger.info("nomofomo completed successfully")
 
 
