@@ -31,11 +31,12 @@ sb = supabase.create_client(
 
 @dataclass
 class Event:
-    _id: str
-    name: str
-    when: str
-    room: str
-    url: str
+    _id: str = ""
+    name: str = ""
+    when: str = ""
+    room: str = ""
+    url: str = ""
+    dates: str = ""
 
 
 def randomize_user_agent() -> str:
