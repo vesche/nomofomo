@@ -125,7 +125,7 @@ def parse_events_hb(events: list[dict]) -> list[Event]:
         # skip if the named event is already known
         if name in known_names:
             continue
-        dates = [i['eventDate'] for i in r if i['name']==name]
+        dates = [i['eventDate'] for i in events if i['name']==name]
         new_events.append(
             Event(
                 name=name,
