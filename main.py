@@ -30,13 +30,18 @@ sb = supabase.create_client(
 
 
 @dataclass
-class Event:
-    _id: str = ""
-    name: str = ""
-    when: str = ""
-    room: str = ""
-    url: str = ""
-    dates: str = ""
+class EventCM:
+    _id: str
+    name: str
+    when: str
+    room: str
+    url: str
+
+
+@dataclass
+class EventHB:
+    name: str
+    dates: str
 
 
 def randomize_user_agent() -> str:
@@ -78,7 +83,7 @@ def get_events_hb() -> list[dict]:
     return r.json()
 
 
-def parse_events_cm(events: list[dict]) -> list[Event]:
+def parse_events_cm(events: list[dict]) -> list[EventCM]:
     new_events = list()
     event_table = sb.table("events_cm").select("*").execute()
 
@@ -100,7 +105,7 @@ def parse_events_cm(events: list[dict]) -> list[Event]:
             logger.error(f"Unable to parse datetime, {e}")
 
         new_events.append(
-            Event(
+            EventCM(
                 _id=_id,
                 name=event.get("title"),
                 when=when,
@@ -112,7 +117,7 @@ def parse_events_cm(events: list[dict]) -> list[Event]:
     return new_events
 
 
-def parse_events_hb(events: list[dict]) -> list[Event]:
+def parse_events_hb(events: list[dict]) -> list[EventHB]:
     new_events = list()
     event_table = sb.table("events_hb").select("*").execute()
 
@@ -125,7 +130,7 @@ def parse_events_hb(events: list[dict]) -> list[Event]:
             continue
         dates = [i['eventDate'] for i in events if i['name']==name]
         new_events.append(
-            Event(
+            EventHB(
                 name=name,
                 dates=f"{dates[0][:10]} - {dates[-1][:10]}",
             )
@@ -134,7 +139,7 @@ def parse_events_hb(events: list[dict]) -> list[Event]:
     return new_events
 
 
-def execute_events_cm(new_events: list[Event]) -> None:
+def execute_events_cm(new_events: list[EventCM]) -> None:
     msg = "NOMOFOMO ALERT CM!\n"
     for e in new_events:
         msg += f"{e.name}, {e.when}, {e.room}\n"
@@ -143,7 +148,7 @@ def execute_events_cm(new_events: list[Event]) -> None:
     _ = send_sms(msg.strip())
 
 
-def execute_events_hb(new_events: list[Event]) -> None:
+def execute_events_hb(new_events: list[EventHB]) -> None:
     msg = "NOMOFOMO ALERT HB!\n"
     for e in new_events:
         msg += f"{e.name}, {e.dates}\n"
