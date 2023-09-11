@@ -24,6 +24,7 @@ jobs:
       run: python main.py
       env:
         CM_URL: ${{ secrets.CM_URL }}
+        HB_URL: ${{ secrets.HB_URL }}
         TWILIO_NUMBER: ${{ secrets.TWILIO_NUMBER }}
         MY_NUMBER: ${{ secrets.MY_NUMBER }}
         TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
