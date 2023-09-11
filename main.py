@@ -80,7 +80,11 @@ def get_events_hb() -> list[dict]:
     except Exception as e:
         logger.error(f"Unable to make web request, {e}")
         sys.exit(1)
-    return r.json()
+    try:
+        return r.json()
+    except Exception as e:
+        print(f'Error in get_events_hb JSON decode, {r.status_code} {r.text} - {e}')
+        return [{}]
 
 
 def parse_events_cm(events: list[dict]) -> list[EventCM]:
