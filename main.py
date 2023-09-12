@@ -54,7 +54,7 @@ def get_events_cm() -> list[dict]:
     try:
         r = requests.get(cm_url, headers={"User-Agent": randomize_user_agent()})
     except Exception as e:
-        logger.error(f"Unable to make web request, {e}")
+        logger.error(f"Error (CM), Unable to make web request, {e}")
         sys.exit(1)
 
     try:
@@ -65,7 +65,7 @@ def get_events_cm() -> list[dict]:
         data = json.loads(res.pop().text)
         events = data["props"]["pageProps"]["data"]["events"]
     except Exception as e:
-        logger.error(f"Unable to parse web data, {e}")
+        logger.error(f"Error (CM), Unable to parse web data, {e}")
         sys.exit(1)
 
     return events
@@ -75,16 +75,22 @@ def get_events_hb() -> list[dict]:
     dt_now = datetime.datetime.now()
     dt_fut = dt_now + relativedelta(years=2)
     hb_url = get_cred("HB_URL") + f"startDate={str(dt_now)[:10]}&endDate={str(dt_fut)[:10]}"
-    try:
-        r = requests.get(hb_url, headers={"User-Agent": randomize_user_agent()})
-    except Exception as e:
-        logger.error(f"Unable to make web request, {e}")
-        sys.exit(1)
-    try:
-        return r.json()
-    except Exception as e:
-        print(f'Error in get_events_hb JSON decode, {r.status_code} {r.text} - {e}')
-        return [{}]
+
+    # Note: HB has problems sometimes, this will attempt 5 times (10 second wait between)
+    for attempt in range(1, 6):
+        try:
+            r = requests.get(hb_url, headers={"User-Agent": randomize_user_agent()})
+        except Exception as e:
+            logger.error(f"Error (HB), Unable to make web request, {e}")
+            sys.exit(1)
+        try:
+            return r.json()
+        except Exception as e:
+            logger.error(f'Error (HB), attempt {attempt}/5 - {e}')
+        time.sleep(10)
+
+    logger.error('Error (HB), hit max retries')
+    sys.exit(1)
 
 
 def parse_events_cm(events: list[dict]) -> list[EventCM]:
