@@ -1,7 +1,6 @@
 import datetime
 import json
 import random
-import sys
 import time
 from dataclasses import dataclass
 from dateutil.relativedelta import relativedelta
@@ -90,7 +89,7 @@ def get_events_hb() -> list[dict]:
     try:
         return r.json()
     except Exception as e:
-        logger.error(f'Error (HB), JSON decode problem, {e}')
+        logger.error(f"Error (HB), JSON decode problem, {e}")
         raise YikesAnError("Web parsing error (HB)!")
 
 
@@ -132,14 +131,14 @@ def parse_events_hb(events: list[dict]) -> list[EventHB]:
     new_events = list()
     event_table = sb.table("events_hb").select("*").execute()
 
-    names = list(set(i['name'] for i in events))
+    names = list(set(i["name"] for i in events))
     known_names = [i["name"] for i in event_table.data]
 
     for name in names:
         # skip if the named event is already known
         if name in known_names:
             continue
-        dates = [i['eventDate'] for i in events if i['name']==name]
+        dates = [i["eventDate"] for i in events if i["name"]==name]
         new_events.append(
             EventHB(
                 name=name,
