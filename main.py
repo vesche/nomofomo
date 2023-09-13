@@ -44,6 +44,10 @@ class EventHB:
     dates: str
 
 
+class YikesAnError(Exception):
+    pass
+
+
 def randomize_user_agent() -> str:
     user_agents = open("user_agents.txt").read().splitlines()
     return random.choice(user_agents)
@@ -51,11 +55,12 @@ def randomize_user_agent() -> str:
 
 def get_events_cm() -> list[dict]:
     cm_url = get_cred("CM_URL")
+
     try:
         r = requests.get(cm_url, headers={"User-Agent": randomize_user_agent()})
     except Exception as e:
         logger.error(f"Error (CM), Unable to make web request, {e}")
-        sys.exit(1)
+        raise YikesAnError("Web request error (CM)!")
 
     try:
         soup = BeautifulSoup(r.text, "html.parser")
@@ -66,7 +71,7 @@ def get_events_cm() -> list[dict]:
         events = data["props"]["pageProps"]["data"]["events"]
     except Exception as e:
         logger.error(f"Error (CM), Unable to parse web data, {e}")
-        sys.exit(1)
+        raise YikesAnError("Web parsing error (CM)!")
 
     return events
 
@@ -76,21 +81,17 @@ def get_events_hb() -> list[dict]:
     dt_fut = dt_now + relativedelta(years=2)
     hb_url = get_cred("HB_URL") + f"startDate={str(dt_now)[:10]}&endDate={str(dt_fut)[:10]}"
 
-    # Note: HB has problems sometimes, this will attempt 5 times (10 second wait between)
-    for attempt in range(1, 6):
-        try:
-            r = requests.get(hb_url, headers={"User-Agent": randomize_user_agent()})
-        except Exception as e:
-            logger.error(f"Error (HB), Unable to make web request, {e}")
-            sys.exit(1)
-        try:
-            return r.json()
-        except Exception as e:
-            logger.error(f'Error (HB), attempt {attempt}/5 - {e}')
-        time.sleep(10)
+    try:
+        r = requests.get(hb_url, headers={"User-Agent": randomize_user_agent()})
+    except Exception as e:
+        logger.error(f"Error (HB), Unable to make web request, {e}")
+        raise YikesAnError("Web request error (HB)!")
 
-    logger.error('Error (HB), hit max retries')
-    sys.exit(1)
+    try:
+        return r.json()
+    except Exception as e:
+        logger.error(f'Error (HB), JSON decode problem, {e}')
+        raise YikesAnError("Web parsing error (HB)!")
 
 
 def parse_events_cm(events: list[dict]) -> list[EventCM]:
@@ -181,16 +182,32 @@ def send_sms(body: str) -> str:
 
 def run() -> None:
     # cm
-    events_cm = get_events_cm()
-    new_events_cm = parse_events_cm(events_cm)
-    if new_events_cm:
-        execute_events_cm(new_events_cm)
+    run_cm = True
+    try:
+        events_cm = get_events_cm()
+    except YikesAnError:
+        run_cm = False
+    if run_cm:
+        new_events_cm = parse_events_cm(events_cm)
+        if new_events_cm:
+            logger.info("CM Parsing complete, NEW EVENTS found! Executing...")
+            execute_events_cm(new_events_cm)
+        else:
+            logger.info("CM Parsing complete, no new events found")
 
     # hb
-    events_hb = get_events_hb()
-    new_events_hb = parse_events_hb(events_hb)
-    if new_events_hb:
-        execute_events_hb(new_events_hb)
+    run_hb = True
+    try:
+        events_hb = get_events_hb()
+    except YikesAnError:
+        run_hb = False
+    if run_hb:
+        new_events_hb = parse_events_hb(events_hb)
+        if new_events_hb:
+            logger.info("HB Parsing complete, NEW EVENTS found! Executing...")
+            execute_events_hb(new_events_hb)
+        else:
+            logger.info("HB Parsing complete, no new events found")
 
     logger.info("nomofomo completed successfully")
 
