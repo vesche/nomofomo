@@ -2,7 +2,8 @@ name: nomofomo action
 
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '*/30 * * * *'
+  workflow_dispatch: # allow manual trigger
 
 permissions:
   contents: read
